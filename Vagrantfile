@@ -18,19 +18,32 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
 
   # 共享目录
-  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+  config.vm.synced_folder ".", "/vagrant"
   config.vm.synced_folder "/files/SyncedFoldersVagrant", "/data/www"
+  config.vm.synced_folder "/files/express", "/data/express"
   # config.vm.synced_folder "./config/nginx/conf.d", "/etc/nginx/conf.d", type: "virtualbox"
 
 
   # VirtaulBox相关配置
   config.vm.provider "virtualbox" do |vb|
-    vb.name = "mycentos"
+    vb.name = "kickflip"
     vb.cpus = 1
     vb.memory = "2048"
   end
 
   config.vm.provision "shell", inline: <<-SHELL
+    sudo yum update -y
+    # 安装虚拟增强工具，为了共享文件夹
+    # 在virtualbox中将增强工具iso加入虚拟光驱
+    sudo mount /dev/cdrom /media
+    sudo yum install kernel-devel gcc
+    cd /media
+    sudo ./VBoxLinuxAdditions.run
+    sudo yum install kernel-devel kernel-devel-3.10.0-693.11.6.el7.x86_64
+    sudo ./VBoxLinuxAdditions.run
+    # hand vagrant reload
+    sudo mount -t vboxsf -o uid=1000,gid=1000 vagrant /vagrant
+
     cd ~
     # 安装基本库
     sudo yum install -y gcc gcc-c++
@@ -44,8 +57,8 @@ Vagrant.configure("2") do |config|
     sudo yum install nginx -y
     sudo systemctl start nginx.service
     sudo systemctl enable nginx.service
-    cp /vagrant/config/nginx/nginx.conf /etc/nginx/nginx.conf # 拷贝配置文件到虚拟机内
-    cp /vagrant/config/nginx/conf.d /etc/nginx/conf.d
+    #sudo cp /vagrant/config/nginx/nginx.conf /etc/nginx/nginx.conf # 拷贝配置文件到虚拟机内
+    sudo cp -R /vagrant/config/nginx/conf.d /etc/nginx/conf.d
 
     $ 安装nodejs
     wget https://nodejs.org/dist/v9.8.0/node-v9.8.0.tar.gz
@@ -59,11 +72,11 @@ Vagrant.configure("2") do |config|
     sudo systemctl enable docker.service
 
     # 安装php版本管理工具
-    rpm -ivh http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
-    rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
+    sudo rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    sudo rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm
     sudo yum install -y php72w php72w-cli php72w-fpm php72w-mysql
     sudo systemctl restart nginx.service php-fpm.service # php-fpm重启后需要重新启动
-
+    sudo systemctl enable nginx.service php-fpm.service
 
     # 安装mysql
     wget https://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm # 下载源
@@ -71,7 +84,7 @@ Vagrant.configure("2") do |config|
     yum repolist all | grep mysql
     sudo yum install -y mysql-community-server # 安装最新的GA版本
     sudo systemctl start mysqld.service
-    # 接下来需要重新设置一下密码,必须ssh登录进去进行配置，1.找到临时密码；2.修改密码：ALTER USER 'root'@'localhost' IDENTIFIED BY 'MyNewPass4!';
+    # 接下来需要重新设置一下密码,必须ssh登录进去进行配置，1.找到临时密码；2.修改密码
 
     # 安装一些工具
     sudo yum install -y ruby ruby-devel make gcc 	# 安装gem需要的一些ruby依赖
