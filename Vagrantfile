@@ -15,7 +15,8 @@ Vagrant.configure("2") do |config|
 
   # 代理端口
   config.vm.network "private_network", type: "dhcp"
-  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+  config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1" # 用于nginx的后端
+  config.vm.network "forwarded_port", guest: 3000, host: 8081, host_ip: "127.0.0.1" # 可以用于node服务端开发
 
   # 共享目录
   config.vm.synced_folder ".", "/vagrant"
@@ -63,8 +64,10 @@ Vagrant.configure("2") do |config|
     $ 安装nodejs
     wget https://nodejs.org/dist/v9.8.0/node-v9.8.0.tar.gz
     tar -xzf node-v9.8.0.tar.gz
-    cd node-v9.80.tar.gz
+    cd node-v9.8.0.tar.gz
     ./configure && make && sudo make install
+    sudo ln -s /usr/local/bin/node /usr/bin/node
+    sudo ln -s /usr/local/bin/npm /usr/bin/npm
 
     # 安装docker
     sudo yum install docker -y
@@ -84,7 +87,7 @@ Vagrant.configure("2") do |config|
     yum repolist all | grep mysql
     sudo yum install -y mysql-community-server # 安装最新的GA版本
     sudo systemctl start mysqld.service
-    # 接下来需要重新设置一下密码,必须ssh登录进去进行配置，1.找到临时密码；2.修改密码
+    # 接下来需要重新设置一下密码,必须ssh登录进去进行配置，1.找到临时密码；2.修改密码 3.如果无法使用临时密码登录可以是skip-grant-tables方法进去再修改
 
     # 安装一些工具
     sudo yum install -y ruby ruby-devel make gcc 	# 安装gem需要的一些ruby依赖
@@ -98,7 +101,8 @@ Vagrant.configure("2") do |config|
     sudo mv composer.phar /usr/local/bin/composer
 
     #################### node开发工具 #################
-
-    
+    sudo npm install -g pm2
+    # 需要将pm2设为开机自启动
+    # pm2 startup 执行生成出的命令
   SHELL
 end
